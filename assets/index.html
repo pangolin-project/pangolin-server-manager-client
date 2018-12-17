@@ -1,0 +1,37 @@
+<html>
+    <head>
+            <link rel="stylesheet" href="./css/main.css" type="text/css" />
+    </head>
+    <body>
+        <div class='page-container'>
+                <div style=" height:25px; background-color: black;">
+                        <!--拖动区域-->
+                            <div style="-webkit-app-region: drag; width:315px; height:25px; display: inline-block;">
+                            </div>
+                            <div style="height:25px; width: 35px; display: inline-block; padding-bottom: 10px; ">
+                                <a  class='minimize'  id ='minimize-box'></a>
+                            </div>
+                </div>
+
+                <!--内容部分-->
+
+                <div>
+                    <div><label>链接地址:</label></div>
+                    <div><input id='url-input' placeholder="链 接 地 址" class='url-input'/></div>
+
+                    <div class='add-user-link-container'><a  href='#' id='add-user'>添加用户</a></div>
+                    <div class='user-list'  id='user-list'>
+
+                    </div>
+                </div>
+
+        </div>
+
+
+        <script>window.$ = window.jQuery = require('jquery');</script>
+        <script>
+            require('../js/render.js');
+        </script>
+
+    </body>
+</html>
