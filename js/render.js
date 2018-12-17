@@ -4,6 +4,7 @@ const messages = require('../js/messages.js');
 const urlParser = require('../js/url_parser');
 const tls = require('tls');
 const https = require('https');
+var randomstring = require("randomstring");
 
 function checkInput() {
     var inputUrl = $('#url-input').val();
@@ -25,7 +26,7 @@ hs://base64(username:password)@host:port/?pangolin=1&adp=13412&adm=admin&pwd=123
 ================================
 request add: host:port/add
 proxy-authencation : base64(adminuser:password)
-caddyproxy.tk/adduser
+caddyproxy.tk/add
 {
     authstr:base64(user:pwd)
 }
@@ -39,7 +40,7 @@ caddyproxy.tk/adduser
 =================================
 request del : host:port/del
 proxy-authencation : base64(adminuser:password)
-caddyproxy.tk/deluser
+caddyproxy.tk/del
 {
     authstr:base64(user:pwd)
 }
@@ -68,6 +69,9 @@ caddyproxy.tk/list
 
 // true or false
 //'Proxy-Authorization: Basic '+ authenKey +'\r\n\r\n'
+
+
+//hs://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpTNFJaUFZnUERMOWw=@caddyproxy.tk:443/?pangolin=1&adp=13412&adm=admin&pwd=122323
 function InitConnectionWithServer() {
     let host = urlParser.getProxyHost();
     let adminPort = urlParser.getAdminPort();
@@ -77,9 +81,60 @@ function InitConnectionWithServer() {
         port: adminPort,
         path: '/list',
         method: 'GET',
-        headers : {'Proxy-Authorization': 'Basic ' + adminAuthStr + '\r\n\r\n'}
+        headers : {'Proxy-Authorization': 'Basic ' + adminAuthStr}
       };
-   https.request(options, (res) => {
+   try {
+        https.request(options, (res) => {
+            logger.log('list response code : ' + res.statusCode);
+            res.on('data', (data) => {
+                dataObj = JSON.parse(data);
+                if ( dataObj.ret == 0 ) {
+                    for (var i in dataObj.list) {
+                        appendUserOnUI(dataObj.list[i]);
+                    }
+                } else {
+                    logger.log("get list failed : " + dataObj.ret);
+                }
+            });
+        });
+   } catch(error) {
+       logger.log('connect server failed :' + error);
+   }
+   
+   
+}
+
+
+function getRandomAuthStr() {
+    let randUser = randomstring.generate(5);
+    let randPwd =  randomstring.generate(8);
+    let authStr = Buffer.from( randUser + ':' + randPwd ).toString('base64');
+    return authStr;
+}
+
+
+//request to server . add user on server side. 
+//return true or false
+function doRequestAddUser() {
+    let host = urlParser.getProxyHost();
+    let adminPort = urlParser.getAdminPort();
+    let adminAuthStr = urlParser.getAdminAuthKey();
+
+    let postData = JSON.stringify({
+        'authstr' : getRandomAuthStr()
+    });
+    const options = {
+        hostname: host,
+        port: adminPort,
+        path: '/add',
+        method: 'POST',
+        headers : { 'Proxy-Authorization': 'Basic ' + adminAuthStr + '\r\n\r\n',
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+   let req = https.request(options, (res) => {
         logger.log('list response code : ' + res.statusCode);
         res.on('data', (data) => {
             dataObj = JSON.parse(data);
@@ -88,27 +143,61 @@ function InitConnectionWithServer() {
                     appendUserOnUI(dataObj.list[i]);
                 }
             } else {
+                logger.log("add user failed : " + dataObj.ret);
+            }
+        });
+   });
+
+   req.write(postData);
+   req.end();
+}
+
+function doRequestDelUser(authStr) {
+    let host = urlParser.getProxyHost();
+    let adminPort = urlParser.getAdminPort();
+    let adminAuthStr = urlParser.getAdminAuthKey();
+
+    let postData = JSON.stringify({
+        'authstr' : authStr
+    });
+    const options = {
+        hostname: host,
+        port: adminPort,
+        path: '/del',
+        method: 'POST',
+        headers : { 'Proxy-Authorization': 'Basic ' + adminAuthStr + '\r\n\r\n',
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+   let req = https.request(options, (res) => {
+        logger.log('list response code : ' + res.statusCode);
+        res.on('data', (data) => {
+            dataObj = JSON.parse(data);
+            if ( dataObj.ret == 0 ) {
+                removeUserFromUI(authStr);
+            } else {
                 logger.log("get list failed : " + dataObj.ret);
             }
         });
    });
-}
 
-
-
-//request to server . add user on server side. 
-//return true or false
-function doRequestAddUser() {
-
+   req.write(postData);
+   req.end();
 }
 
 
 function appendUserOnUI(authStr) {
-    let aUser = '<div id = "' +authStr+'">'+authStr+'</div>'
-        $('#user-list').append(aUser);
-        $('#' + authStr).bind('click', (ev) => {
-            logger.log('click ' + ev.target.id);
-        });
+    let aUser = '<div id = "' +authStr+'">'+authStr+'&nbsp;&nbsp;<span><button id ="btn-'+ authStr+'">删除</button><span></div>';
+    $('#user-list').append(aUser);
+    $('#btn-' + authStr).bind('click', (ev) => {
+        logger.log('click ' + ev.target.id);
+    });
+}
+
+function removeUserFromUI(authStr) {
+    $('#user-list').remove('#'+authStr);
 }
 
 function onAddUserClick() {
@@ -122,9 +211,9 @@ function onAddUserClick() {
 
     logger.log('add user click');
     if (doRequestAddUser()) {
-        
-    } else {
         appendUserOnUI();
+    } else {
+       
     }
 
     

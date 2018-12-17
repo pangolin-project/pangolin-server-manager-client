@@ -4,7 +4,7 @@ const {ipcMain} = require('electron');
 const logger = require('./logger.js');
 const messages = require('./messages.js');
 const urlParser =  require('./url_parser.js');
-const tls = require('tls');
+
 
 
 function onAsyncMsg(event, msg) {
