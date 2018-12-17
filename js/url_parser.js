@@ -136,7 +136,7 @@ module.exports = {
             //its a share link
             let parts = linkStr.split('#');
             if (parts.length == 2) {
-                clientDownloadUrl = parts[0];
+                clientDownloadURL = parts[0];
                 proxyUrl = decodeURIComponent(parts[1]);
                 if (proxyUrl.indexOf('hs://') == 0) {
                     return parseProxyUrl(proxyUrl);
@@ -191,7 +191,7 @@ module.exports = {
     }, 
 
     getDownloadUrl : function() {
-        return clientDownloadUrl;
+        return clientDownloadURL;
     },
     getShareLinkStr : function() {
         let connectStr = this.getConnectStr();
