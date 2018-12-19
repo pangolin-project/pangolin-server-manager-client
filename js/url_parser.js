@@ -12,7 +12,7 @@ let adminPort = 0;
 let adminUser = '';
 let adminPwd = '';
 
-const clientDownloadURL = 'https://github.com/pangolin-project/pangolin-client-pc/releases/download/v1.0.4/pangolin_client-win32-ia32.zip';
+let clientDownloadURL = 'https://github.com/pangolin-project/pangolin-client-pc/releases/download/v1.0.4/pangolin_client-win32-ia32.zip';
 const saveFilePath = path.join(__dirname, "/admin.dat").replace('app.asar', 'app.asar.unpacked');
 
 function resetInfo() {
@@ -88,6 +88,7 @@ function parseQueryStr(queryStr) {
 //return true or false
 function parseProxyUrl(proxyUrl) {
     let hostParts = proxyUrl.split('@');
+    resetInfo();
     if(hostParts.length == 2) {
         let userPwdBase64 = hostParts[0].substr(5); //hs://base64(username:password)
         if (!parseUserPwd(userPwdBase64)) {
@@ -132,12 +133,13 @@ module.exports = {
     //hs://base64(username:password)@host:port/?pangolin=1&adp=13412&adm=admin&pwd=123lladllasdf 
     //return true or false
     parseLinkStr : function(linkStr) {
+        clientDownloadURL = 'https://github.com/pangolin-project/pangolin-client-pc/releases/download/v1.0.4/pangolin_client-win32-ia32.zip';
         if (linkStr.indexOf('https://') == 0) {
             //its a share link
             let parts = linkStr.split('#');
             if (parts.length == 2) {
                 clientDownloadURL = parts[0];
-                proxyUrl = decodeURIComponent(parts[1]);
+                proxyUrl = decodeURIComponent(parts[1]);          
                 if (proxyUrl.indexOf('hs://') == 0) {
                     return parseProxyUrl(proxyUrl);
                 } else {
