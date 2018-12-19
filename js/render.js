@@ -19,7 +19,7 @@ function checkInput() {
     return true;
 }
 
-// http format for add and del user
+// http format for add/del user and get user list
 /*
 admin url format:
 hs://base64(username:password)@host:port/?pangolin=1&adp=13412&adm=admin&pwd=123lladllasdf
@@ -61,18 +61,19 @@ caddyproxy.tk/list
 200 ok
 {
     ret: 0/-1,
-    list: [authstr1,authstr2,... authstrN]
+    users: [authstr1,authstr2,... authstrN]
 }
 
 */
 
 
 // true or false
-//'Proxy-Authorization: Basic '+ authenKey +'\r\n\r\n'
+//'Proxy-Authorization: authenKey 
 
-
-//hs://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpTNFJaUFZnUERMOWw=@caddyproxy.tk:443/?pangolin=1&adp=13412&adm=admin&pwd=122323
+//adminsuper:223123123
+//hs://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpTNFJaUFZnUERMOWw=@caddyproxy.tk:443/?pangolin=1&adp=48163&adm=adminsuper&pwd=223123123
 function InitConnectionWithServer() {
+    process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
     let host = urlParser.getProxyHost();
     let adminPort = urlParser.getAdminPort();
     let adminAuthStr = urlParser.getAdminAuthKey();
@@ -81,26 +82,38 @@ function InitConnectionWithServer() {
         port: adminPort,
         path: '/list',
         method: 'GET',
-        headers : {'Proxy-Authorization': 'Basic ' + adminAuthStr}
+        checkServerIdentity: function(servername, cert) {
+            logger.log('check server:'+ servername);
+            return 'undefined';
+        },
+        headers : {'Proxy-Authorization': adminAuthStr},
       };
    try {
-        https.request(options, (res) => {
+        let req = https.request(options, (res) => {
             logger.log('list response code : ' + res.statusCode);
             res.on('data', (data) => {
-                dataObj = JSON.parse(data);
-                if ( dataObj.ret == 0 ) {
-                    for (var i in dataObj.list) {
-                        appendUserOnUI(dataObj.list[i]);
+                try {
+                    logger.log('data:' + data);
+                    dataObj = JSON.parse(data);
+                    if ( dataObj.ret == 0 ) {
+                        for (var i in dataObj.users) {
+                            appendUserOnUI(dataObj.list[i]);
+                        }
+                    } else {
+                        logger.log("get list failed : " + dataObj.ret);
                     }
-                } else {
-                    logger.log("get list failed : " + dataObj.ret);
+                } catch(e) {
+                    logger.log("parse response error : " +  e);
                 }
+                
             });
         });
+        req.end();
+        return true;
    } catch(error) {
        logger.log('connect server failed :' + error);
+       return false;
    }
-   
    
 }
 
@@ -128,7 +141,7 @@ function doRequestAddUser() {
         port: adminPort,
         path: '/add',
         method: 'POST',
-        headers : { 'Proxy-Authorization': 'Basic ' + adminAuthStr + '\r\n\r\n',
+        headers : { 'Proxy-Authorization':  adminAuthStr,
                     'Content-Type': 'application/json',
                     'Content-Length': Buffer.byteLength(postData)
         }
@@ -165,26 +178,31 @@ function doRequestDelUser(authStr) {
         port: adminPort,
         path: '/del',
         method: 'POST',
-        headers : { 'Proxy-Authorization': 'Basic ' + adminAuthStr + '\r\n\r\n',
+        headers : { 'Proxy-Authorization': adminAuthStr,
                     'Content-Type': 'application/json',
                     'Content-Length': Buffer.byteLength(postData)
         }
     };
 
-   let req = https.request(options, (res) => {
-        logger.log('list response code : ' + res.statusCode);
-        res.on('data', (data) => {
-            dataObj = JSON.parse(data);
-            if ( dataObj.ret == 0 ) {
-                removeUserFromUI(authStr);
-            } else {
-                logger.log("get list failed : " + dataObj.ret);
-            }
-        });
-   });
-
-   req.write(postData);
-   req.end();
+    try {
+        let req = https.request(options, (res) => {
+            logger.log('list response code : ' + res.statusCode);
+            res.on('data', (data) => {
+                dataObj = JSON.parse(data);
+                if ( dataObj.ret == 0 ) {
+                    removeUserFromUI(authStr);
+                } else {
+                    logger.log("get list failed : " + dataObj.ret);
+                }
+            });
+       });
+    
+       req.write(postData);
+       req.end();
+    } catch(err) {
+        logger.log("del user error :" + err);
+    }
+   
 }
 
 
@@ -225,8 +243,6 @@ $(()=> {
     $('#add-user').bind('click', (ev)=>{
         onAddUserClick();
     });
-
-
     process.on('uncaughtException', (reason, p) => {
         logger.log('uncaught exception : ' + reason);
     });
