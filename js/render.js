@@ -294,13 +294,7 @@ function onAddUserClick() {
         alert('连接服务器失败!');
         return
     }
-
-    if (doRequestAddUser()) {
-        appendUserOnUI();
-    } else {
-       
-    }
-
+    doRequestAddUser();
 }
 
 
