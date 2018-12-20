@@ -6,6 +6,8 @@ const tls = require('tls');
 const https = require('https');
 var randomstring = require("randomstring");
 
+var isServerAvilable = false;
+
 function checkInput() {
     var inputUrl = $('#url-input').val();
     if ( inputUrl.length <= 0) {
@@ -17,6 +19,15 @@ function checkInput() {
         return false;
     }
     return true;
+}
+
+
+function dumpObj(obj) {
+    var objstr = "obj:";
+    for(var o in obj) {
+        objstr += o + ":" + obj[o];
+    }
+    logger.log(objstr);
 }
 
 // http format for add/del user and get user list
@@ -72,11 +83,13 @@ caddyproxy.tk/list
 
 //adminsuper:223123123
 //hs://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpTNFJaUFZnUERMOWw=@caddyproxy.tk:443/?pangolin=1&adp=48163&adm=adminsuper&pwd=223123123
-function InitConnectionWithServer() {
+function doRefreshUsers() {
+    isServerAvilable = false;
     process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
     let host = urlParser.getProxyHost();
     let adminPort = urlParser.getAdminPort();
     let adminAuthStr = urlParser.getAdminAuthKey();
+
     const options = {
         hostname: host,
         port: adminPort,
@@ -89,23 +102,33 @@ function InitConnectionWithServer() {
         headers : {'Proxy-Authorization': adminAuthStr},
       };
    try {
+        var completely_res = '';
         let req = https.request(options, (res) => {
-            logger.log('list response code : ' + res.statusCode);
             res.on('data', (data) => {
                 try {
-                    logger.log('data:' + data);
-                    dataObj = JSON.parse(data);
-                    if ( dataObj.ret == 0 ) {
-                        for (var i in dataObj.users) {
-                            appendUserOnUI(dataObj.list[i]);
+                    logger.log('parse list response:' + data);
+                    completely_res += data;
+                    var dataObj;
+                    try{
+                        dataObj = JSON.parse(completely_res);
+                        completely_res = '';
+                    } catch(e) {
+                        logger.log('partial data:' + data);
+                        return;
+                    }
+                    
+                    if ( dataObj['ret'] == 0 ) {
+                        isServerAvilable = true;
+                        $('#user-list').empty();
+                        for (var i in dataObj['users']) {
+                            appendUserOnUI(dataObj['users'][i]);
                         }
                     } else {
                         logger.log("get list failed : " + dataObj.ret);
                     }
                 } catch(e) {
-                    logger.log("parse response error : " +  e);
+                    logger.log("parse list response error : " +  e);
                 }
-                
             });
         });
         req.end();
@@ -132,9 +155,9 @@ function doRequestAddUser() {
     let host = urlParser.getProxyHost();
     let adminPort = urlParser.getAdminPort();
     let adminAuthStr = urlParser.getAdminAuthKey();
-
+    let newUser = getRandomAuthStr();
     let postData = JSON.stringify({
-        'authstr' : getRandomAuthStr()
+        'authstr' : newUser
     });
     const options = {
         hostname: host,
@@ -148,16 +171,16 @@ function doRequestAddUser() {
     };
 
    let req = https.request(options, (res) => {
-        logger.log('list response code : ' + res.statusCode);
         res.on('data', (data) => {
-            dataObj = JSON.parse(data);
-            if ( dataObj.ret == 0 ) {
-                for (var i in dataObj.list) {
-                    appendUserOnUI(dataObj.list[i]);
+            try {
+                dataObj = JSON.parse(data);
+                if (dataObj['ret'] == 0) {
+                    appendUserOnUI(newUser);
                 }
-            } else {
-                logger.log("add user failed : " + dataObj.ret);
+            } catch(e) {
+                logger.log("add response error :" + e);
             }
+           
         });
    });
 
@@ -165,11 +188,13 @@ function doRequestAddUser() {
    req.end();
 }
 
-function doRequestDelUser(authStr) {
+
+
+function doRequestDelUser(id) {
     let host = urlParser.getProxyHost();
     let adminPort = urlParser.getAdminPort();
     let adminAuthStr = urlParser.getAdminAuthKey();
-
+    let authStr = id2AuthStr(id);
     let postData = JSON.stringify({
         'authstr' : authStr
     });
@@ -186,17 +211,21 @@ function doRequestDelUser(authStr) {
 
     try {
         let req = https.request(options, (res) => {
-            logger.log('list response code : ' + res.statusCode);
+            logger.log('del response code : ' + res.statusCode);
             res.on('data', (data) => {
-                dataObj = JSON.parse(data);
-                if ( dataObj.ret == 0 ) {
-                    removeUserFromUI(authStr);
-                } else {
-                    logger.log("get list failed : " + dataObj.ret);
+                try {
+                    var dataObj = JSON.parse(data);
+                    if ( dataObj.ret == 0 ) {
+                        removeUserFromUI(id);
+                    } else {
+                        logger.log("del failed : " + dataObj.ret);
+                    }
+                } catch(e) {
+                    logger.log("del response error:" + e);
                 }
+                
             });
        });
-    
        req.write(postData);
        req.end();
     } catch(err) {
@@ -205,37 +234,83 @@ function doRequestDelUser(authStr) {
    
 }
 
-
-function appendUserOnUI(authStr) {
-    let aUser = '<div id = "' +authStr+'">'+authStr+'&nbsp;&nbsp;<span><button id ="btn-'+ authStr+'">删除</button><span></div>';
-    $('#user-list').append(aUser);
-    $('#btn-' + authStr).bind('click', (ev) => {
-        logger.log('click ' + ev.target.id);
-    });
+function authStr2Id(authStr) {
+    let id = Buffer.from(authStr, 'base64').toString();
+    id = id.replace(':', '_');
+    return id;
 }
 
-function removeUserFromUI(authStr) {
-    $('#user-list').remove('#'+authStr);
+function id2AuthStr(id) {
+    id = id.replace('_', ':');
+    let authstr = Buffer.from(id).toString('base64');
+    return authstr;
+}
+
+function getIdFromButtonId(btnId) {
+    return btnId.replace('btn-', '');
+}
+
+
+function appendUserOnUI(authStr) {
+    logger.log('append user :' + authStr);
+    var encodeid = authStr2Id(authStr);
+    logger.log('add user id :' + encodeid);
+    let aUser;
+    if ( $('#user-list').children().length == 0) {
+        aUser = "<div id='" + encodeid + "'>" + authStr + "&nbsp;&nbsp;</div>";
+    } else {
+        aUser = "<div id='" + encodeid + "'>" + authStr + "&nbsp;&nbsp;<span><button id='btn-" + encodeid +"'>删除</button><span></div>";
+    }
+    
+    $('#user-list').append(aUser);
+    try {
+        var element = document.getElementById('btn-' + encodeid);
+        if (element) {
+            element.addEventListener('click', (ev) => {
+                logger.log('click ' + ev.target.id);
+                var divId = getIdFromButtonId(ev.target.id);
+                doRequestDelUser(divId);
+            });
+        } else {
+            logger.log('error element  is '+ element);
+        }
+    } catch(e) {
+        logger.log("get element error:" + e);
+    }
+    
+}
+
+function removeUserFromUI(id) {
+    var divId = getIdFromButtonId(id);
+    logger.log('remove element : ' + divId);
+    $('#'+divId).remove();
 }
 
 function onAddUserClick() {
     if ( !checkInput()) {
         return;
     }
-    if ( !InitConnectionWithServer() ) {
+    if ( !isServerAvilable ) {
         alert('连接服务器失败!');
         return
     }
 
-    logger.log('add user click');
     if (doRequestAddUser()) {
         appendUserOnUI();
     } else {
        
     }
 
-    
 }
+
+
+function refreshUsers() {
+    if ( !checkInput()) {
+        return;
+    }
+    doRefreshUsers();
+}
+
 
 // init event bindings
 
@@ -243,6 +318,10 @@ $(()=> {
     $('#add-user').bind('click', (ev)=>{
         onAddUserClick();
     });
+    $('#refresh-users').bind('click', (ev) => {
+        refreshUsers();
+    });
+
     process.on('uncaughtException', (reason, p) => {
         logger.log('uncaught exception : ' + reason);
     });
