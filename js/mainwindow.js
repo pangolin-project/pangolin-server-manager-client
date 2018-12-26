@@ -6,13 +6,32 @@ const messages = require('./messages.js');
 const urlParser =  require('./url_parser.js');
 
 
+function onQRCode(event, authstr) {
+    logger.log('authstr ' + authstr);
+
+    let winOptions = {
+        width:150, height:150, 
+        center:true, maximizable:false, 
+        minimizable:false,closable:true, 
+        title : '二维码',
+        frame : true,
+        resizable: false,
+        modal: true
+    }
+    qrwindow = new BrowserWindow(winOptions);
+    let page = path.join('file://', __dirname, '../assets/qrcode.html');
+    qrwindow.loadURL(page);
+    qrwindow.on('show', ()=>{
+        qrwindow.webContents.send('qrcode', '111');
+    });
+    
+}
+
 
 function onAsyncMsg(event, msg) {
     logger.log('receive async msg ' + msg.type);
-    if(msg.type == messages.MSG_TYPE_CONNECT) {
-        onConnectMsg(event, msg.param);
-    } else if (msg.type == messages.MSG_TYPE_DISCONNECT) {
-        onDisconnectMsg(msg.param);
+    if(msg.type == messages.MSG_TYPE_QRCODE) {
+        onQRCode(event, msg.param);
     } else if (msg.type == messages.MSG_TYPE_QUIT) {
         closeWindowEx();
     } else if (msg.type == messages.MSG_TYPE_MINIMIZE) {
@@ -33,11 +52,11 @@ function closeWindowEx() {
 module.exports = {
     createMainWindow : function() {
         let winOptions = {
-            width:350, height:450, 
+            width:400, height:450, 
             center:true, maximizable:false, 
             minimizable:true,closable:true, 
             title : 'pangolin-server-manager',
-            frame : false,
+            frame : true,
             resizable: false
         }
         mainWindow = new BrowserWindow(winOptions);

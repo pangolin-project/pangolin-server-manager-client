@@ -250,19 +250,46 @@ function getIdFromButtonId(btnId) {
     return btnId.replace('btn-', '');
 }
 
+function doCopyUser(btnId) {
+    var textId = btnId.replace('btncopy-', '');
+    if (textId.length > 0) {
+        var authStr = $('#'+textId).text();
+        let host = urlParser.getProxyHost();
+        let port = urlParser.getProxyPort();
+        let connectStr = "hs://"+authStr+"@"+host+":"+port+"/?pangolin=1";
+        clipboard.writeText(connectStr);
+        alert('拷贝成功')
+    } else {
+        logger.log('get text id failed');
+    }
+}
+
+// function doShowQRCode(id) {
+//     id = id.replace('qrcodeshare-', '');
+//     var authstr = id2AuthStr(id);
+//     logger.log('authstr: ' + authstr);
+
+//     let qrmsg = messages.buildMsg(messages.MSG_TYPE_QRCODE, authstr);
+//     ipcRenderer.send('async-msg', qrmsg);
+// }
+
 
 function appendUserOnUI(authStr) {
     logger.log('append user :' + authStr);
     var encodeid = authStr2Id(authStr);
-    logger.log('add user id :' + encodeid);
-    let aUser;
-    if ( $('#user-list').children().length == 0) {
-        aUser = "<div id='" + encodeid + "'>" + authStr + "&nbsp;&nbsp;</div>";
+    let aUser = '';
+    let firstElement = ($('#user-list').children().length == 0);
+    if (firstElement) {
+        aUser = "<table><tr id='" + encodeid + "'><td>" + authStr + "[默认]<td></tr></table>";
     } else {
-        aUser = "<div id='" + encodeid + "'>" + authStr + "&nbsp;&nbsp;<span><button id='btn-" + encodeid +"'>删除</button><span></div>";
+        aUser = "<table id='tb-"+encodeid+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btn-" + encodeid +
+         "'>删除</button></td><td><button id='btncopy-"+encodeid+"'>复制</button></td></tr></table>";
     }
-    
+    logger.log('add user: '+ aUser);
     $('#user-list').append(aUser);
+    if(firstElement) {
+        return;
+    }
     try {
         var element = document.getElementById('btn-' + encodeid);
         if (element) {
@@ -274,6 +301,17 @@ function appendUserOnUI(authStr) {
         } else {
             logger.log('error element  is '+ element);
         }
+        var cpId = 'btncopy-' + encodeid;
+        var element2 = $('#'+cpId);
+        if (element2) {
+            element2.bind('click', (ev) => {
+                doCopyUser(ev.target.id);
+            });
+        } else {
+            logger.log('bind copy event failed for ' + cpId);
+        }
+        
+
     } catch(e) {
         logger.log("get element error:" + e);
     }
@@ -283,7 +321,7 @@ function appendUserOnUI(authStr) {
 function removeUserFromUI(id) {
     var divId = getIdFromButtonId(id);
     logger.log('remove element : ' + divId);
-    $('#'+divId).remove();
+    $('#tb-'+divId).remove();
 }
 
 function onAddUserClick() {
