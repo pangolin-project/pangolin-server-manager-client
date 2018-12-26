@@ -279,28 +279,36 @@ function appendUserOnUI(authStr) {
     var encodeid = authStr2Id(authStr);
     let aUser = '';
     let firstElement = ($('#user-list').children().length == 0);
-    if (firstElement) {
-        aUser = "<table><tr id='" + encodeid + "'><td>" + authStr + "[默认]<td></tr></table>";
+    let userLineClass = 'user-line';
+    if ($('#user-list').children().length % 2 == 0) {
+        userLineClass = 'user-line';
     } else {
-        aUser = "<table id='tb-"+encodeid+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btn-" + encodeid +
+        userLineClass = 'user-line2';
+    }
+    if (firstElement) {
+        aUser = "<table id='tb-"+encodeid+"' class='"+userLineClass+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btncopy-"+encodeid+"'>复制</button></td><td></td></tr></table>";
+    } else {
+        aUser = "<table id='tb-"+encodeid+"' class='"+userLineClass+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btn-" + encodeid +
          "'>删除</button></td><td><button id='btncopy-"+encodeid+"'>复制</button></td></tr></table>";
     }
     logger.log('add user: '+ aUser);
     $('#user-list').append(aUser);
-    if(firstElement) {
-        return;
-    }
+    
     try {
-        var element = document.getElementById('btn-' + encodeid);
-        if (element) {
-            element.addEventListener('click', (ev) => {
-                logger.log('click ' + ev.target.id);
-                var divId = getIdFromButtonId(ev.target.id);
-                doRequestDelUser(divId);
-            });
-        } else {
-            logger.log('error element  is '+ element);
+
+        if(!firstElement) {
+            var element = document.getElementById('btn-' + encodeid);
+            if (element) {
+                element.addEventListener('click', (ev) => {
+                    logger.log('click ' + ev.target.id);
+                    var divId = getIdFromButtonId(ev.target.id);
+                    doRequestDelUser(divId);
+                });
+            } else {
+                logger.log('error element  is '+ element);
+            }
         }
+        
         var cpId = 'btncopy-' + encodeid;
         var element2 = $('#'+cpId);
         if (element2) {
@@ -343,6 +351,10 @@ function refreshUsers() {
     doRefreshUsers();
 }
 
+function doQuit() {
+    var quitMsg = messages.buildMsg(messages.MSG_TYPE_QUIT, '');
+    ipcRenderer.send('async-msg', quitMsg);
+}
 
 // init event bindings
 
@@ -352,6 +364,10 @@ $(()=> {
     });
     $('#refresh-users').bind('click', (ev) => {
         refreshUsers();
+    });
+    
+    $('#btn-quit').bind('click', (ev) =>{
+        doQuit();
     });
 
     process.on('uncaughtException', (reason, p) => {

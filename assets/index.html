@@ -4,29 +4,25 @@
     </head>
     <body>
         <div class='page-container'>
-            <!--拖动区域
-                <div style=" height:25px; background-color: black;">
-                            <div style="-webkit-app-region: drag; width:315px; height:25px; display: inline-block;">
-                            </div>
-                            <div style="height:25px; width: 35px; display: inline-block; padding-bottom: 10px; ">
-                                <a  class='minimize'  id ='minimize-box'></a>
-                            </div>
-                </div>
-            -->
-
                 <!--内容部分-->
 
                 <div>
-                    <div><label>链接地址:</label></div>
+                    <div><label>管理链接:</label></div>
+                    <div class='sep'></div>
                     <div>
-                        <input id='url-input' placeholder="链 接 地 址" class='url-input' value="hs://cHJveHlIMUEzOmMxZHdjaFVmRXo=@caddyproxy.tk:443/?pangolin=1&adp=3521&adm=admin8wAWw2Py&pwd=BETgqkAK4v"/>
+                        <input id='url-input' placeholder="链 接 地 址" class='url-input' value=""/>
                     </div>
+                    <div class='sep'></div>
                     <div><button id='refresh-users'>刷新</button></div>
-
+                    <div class='sep'></div>
                     <div class='add-user-link-container'><a  href='#' id='add-user'>添加用户</a></div>
                     <div id='user-list'>
                       
                     </div>
+                </div>
+                <div class='sep2'></div>
+                <div>
+                    <button id='btn-quit'>退出</button>
                 </div>
 
         </div>

@@ -45,6 +45,7 @@ function onAsyncMsg(event, msg) {
 }
 
 function closeWindowEx() {
+    mainWindow.close();
     logger.log('close window ex!!! quit ');
 }
 

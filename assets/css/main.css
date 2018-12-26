@@ -10,7 +10,7 @@
 }
 
 .url-input {
-    width:300px;
+    width:360px;
     height: 25px;
 }
 
@@ -18,12 +18,32 @@
 }
 
 .add-user-link-container a {
-    background-image: url('../images/plus.png');
+    background-color: aquamarine;
 }
 
 .add-user-link-container a:hover {
-    background-image: url('../images/plus.png');
+    background-color: aqua;
 }
 
+.sep {
+    height: 5px;
+}
 
+.sep2 {
+    height: 10px;
+}
 
+body {
+    font-size: 12px;
+}
+
+.user-line {
+    font-size: 12px;
+    background-color: blue;
+    width:350px;
+}
+.user-line2 {
+    font-size: 12px;
+    background-color:chocolate;
+    width:350px;
+}
