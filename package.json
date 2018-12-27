@@ -5,7 +5,40 @@
   "main": "index.js",
   "scripts": {
     "dbg": "electron index.js  --disable-gpu",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "packmac": "electron-builder"
+  },
+  "build": {
+    "appId": "pangolin.com",
+    "productName": "pangolin-server-manager-client",
+    "target": "zip",
+    "mac": {
+      "target": "dmg"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ]
+    },
+    "files": [
+      "**/*"
+    ],
+    "asarUnpack": [
+      "js/admin.dat"
+    ],
+    "directories": {
+      "output": "dist/darwin/"
+    }
   },
   "repository": {
     "type": "git",
@@ -24,6 +57,7 @@
     "randomstring": "^1.1.5"
   },
   "devDependencies": {
-    "electron": "^3.0.11"
+    "electron": "^3.0.11",
+    "electron-builder": "^20.38.4"
   }
 }

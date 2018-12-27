@@ -270,6 +270,7 @@ module.exports = {
        return profileArray;
     },
 
+    //return admin link string array
     getAllProfilesForAdmin : function() {
         let content;
         try {
@@ -278,11 +279,9 @@ module.exports = {
             logger.log('get config file failed ' + err);
             return [];
         }
-        //console.log('content:'+ content);
         let lines = content.split('\n');
         let profileArray = [];
         for(var i in lines) {
-            //console.log('line:'+ lines[i]);
              if (lines[i].length > 0 && lines[i] != '\n') {
                  profileArray.push(lines[i]);
              } 

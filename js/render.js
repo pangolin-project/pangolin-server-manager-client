@@ -1,4 +1,4 @@
-const {ipcRenderer, clipboard} = require('electron');
+const { ipcRenderer, clipboard } = require('electron');
 const logger = require('../js/logger.js');
 const messages = require('../js/messages.js');
 const urlParser = require('../js/url_parser');
@@ -10,7 +10,7 @@ var isServerAvilable = false;
 
 function checkInput() {
     var inputUrl = $('#url-input').val();
-    if ( inputUrl.length <= 0) {
+    if (inputUrl.length <= 0) {
         alert('请输入服务器url');
         return false;
     }
@@ -18,13 +18,15 @@ function checkInput() {
         alert('链接格式不正确!');
         return false;
     }
+
+    urlParser.saveAsAdmin();
     return true;
 }
 
 
 function dumpObj(obj) {
     var objstr = "obj:";
-    for(var o in obj) {
+    for (var o in obj) {
         objstr += o + ":" + obj[o];
     }
     logger.log(objstr);
@@ -95,13 +97,13 @@ function doRefreshUsers() {
         port: adminPort,
         path: '/list',
         method: 'GET',
-        checkServerIdentity: function(servername, cert) {
-            logger.log('check server:'+ servername);
+        checkServerIdentity: function (servername, cert) {
+            logger.log('check server:' + servername);
             return 'undefined';
         },
-        headers : {'Proxy-Authorization': adminAuthStr},
-      };
-   try {
+        headers: { 'Proxy-Authorization': adminAuthStr },
+    };
+    try {
         var completely_res = '';
         let req = https.request(options, (res) => {
             res.on('data', (data) => {
@@ -109,15 +111,15 @@ function doRefreshUsers() {
                     logger.log('parse list response:' + data);
                     completely_res += data;
                     var dataObj;
-                    try{
+                    try {
                         dataObj = JSON.parse(completely_res);
                         completely_res = '';
-                    } catch(e) {
+                    } catch (e) {
                         logger.log('partial data:' + data);
                         return;
                     }
-                    
-                    if ( dataObj['ret'] == 0 ) {
+
+                    if (dataObj['ret'] == 0) {
                         isServerAvilable = true;
                         $('#user-list').empty();
                         for (var i in dataObj['users']) {
@@ -126,25 +128,25 @@ function doRefreshUsers() {
                     } else {
                         logger.log("get list failed : " + dataObj.ret);
                     }
-                } catch(e) {
-                    logger.log("parse list response error : " +  e);
+                } catch (e) {
+                    logger.log("parse list response error : " + e);
                 }
             });
         });
         req.end();
         return true;
-   } catch(error) {
-       logger.log('connect server failed :' + error);
-       return false;
-   }
-   
+    } catch (error) {
+        logger.log('connect server failed :' + error);
+        return false;
+    }
+
 }
 
 
 function getRandomAuthStr() {
     let randUser = randomstring.generate(5);
-    let randPwd =  randomstring.generate(8);
-    let authStr = Buffer.from( randUser + ':' + randPwd ).toString('base64');
+    let randPwd = randomstring.generate(8);
+    let authStr = Buffer.from(randUser + ':' + randPwd).toString('base64');
     return authStr;
 }
 
@@ -157,35 +159,36 @@ function doRequestAddUser() {
     let adminAuthStr = urlParser.getAdminAuthKey();
     let newUser = getRandomAuthStr();
     let postData = JSON.stringify({
-        'authstr' : newUser
+        'authstr': newUser
     });
     const options = {
         hostname: host,
         port: adminPort,
         path: '/add',
         method: 'POST',
-        headers : { 'Proxy-Authorization':  adminAuthStr,
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(postData)
+        headers: {
+            'Proxy-Authorization': adminAuthStr,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
         }
     };
 
-   let req = https.request(options, (res) => {
+    let req = https.request(options, (res) => {
         res.on('data', (data) => {
             try {
                 dataObj = JSON.parse(data);
                 if (dataObj['ret'] == 0) {
                     appendUserOnUI(newUser);
                 }
-            } catch(e) {
+            } catch (e) {
                 logger.log("add response error :" + e);
             }
-           
-        });
-   });
 
-   req.write(postData);
-   req.end();
+        });
+    });
+
+    req.write(postData);
+    req.end();
 }
 
 
@@ -196,16 +199,17 @@ function doRequestDelUser(id) {
     let adminAuthStr = urlParser.getAdminAuthKey();
     let authStr = id2AuthStr(id);
     let postData = JSON.stringify({
-        'authstr' : authStr
+        'authstr': authStr
     });
     const options = {
         hostname: host,
         port: adminPort,
         path: '/del',
         method: 'POST',
-        headers : { 'Proxy-Authorization': adminAuthStr,
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(postData)
+        headers: {
+            'Proxy-Authorization': adminAuthStr,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
         }
     };
 
@@ -215,23 +219,23 @@ function doRequestDelUser(id) {
             res.on('data', (data) => {
                 try {
                     var dataObj = JSON.parse(data);
-                    if ( dataObj.ret == 0 ) {
+                    if (dataObj.ret == 0) {
                         removeUserFromUI(id);
                     } else {
                         logger.log("del failed : " + dataObj.ret);
                     }
-                } catch(e) {
+                } catch (e) {
                     logger.log("del response error:" + e);
                 }
-                
+
             });
-       });
-       req.write(postData);
-       req.end();
-    } catch(err) {
+        });
+        req.write(postData);
+        req.end();
+    } catch (err) {
         logger.log("del user error :" + err);
     }
-   
+
 }
 
 function authStr2Id(authStr) {
@@ -253,10 +257,10 @@ function getIdFromButtonId(btnId) {
 function doCopyUser(btnId) {
     var textId = btnId.replace('btncopy-', '');
     if (textId.length > 0) {
-        var authStr = $('#'+textId).text();
+        var authStr = $('#' + textId).text();
         let host = urlParser.getProxyHost();
         let port = urlParser.getProxyPort();
-        let connectStr = "hs://"+authStr+"@"+host+":"+port+"/?pangolin=1";
+        let connectStr = "hs://" + authStr + "@" + host + ":" + port + "/?pangolin=1";
         clipboard.writeText(connectStr);
         alert('拷贝成功')
     } else {
@@ -286,17 +290,17 @@ function appendUserOnUI(authStr) {
         userLineClass = 'user-line2';
     }
     if (firstElement) {
-        aUser = "<table id='tb-"+encodeid+"' class='"+userLineClass+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btncopy-"+encodeid+"'>复制</button></td><td></td></tr></table>";
+        aUser = "<table id='tb-" + encodeid + "' class='" + userLineClass + "'><tr><td><div id='" + encodeid + "'>" + authStr + "</div></td><td><button id='btncopy-" + encodeid + "'>复制</button></td><td></td></tr></table>";
     } else {
-        aUser = "<table id='tb-"+encodeid+"' class='"+userLineClass+"'><tr><td><div id='"+ encodeid +"'>" + authStr + "</div></td><td><button id='btn-" + encodeid +
-         "'>删除</button></td><td><button id='btncopy-"+encodeid+"'>复制</button></td></tr></table>";
+        aUser = "<table id='tb-" + encodeid + "' class='" + userLineClass + "'><tr><td><div id='" + encodeid + "'>" + authStr + "</div></td><td><button id='btn-" + encodeid +
+            "'>删除</button></td><td><button id='btncopy-" + encodeid + "'>复制</button></td></tr></table>";
     }
-    logger.log('add user: '+ aUser);
+    logger.log('add user: ' + aUser);
     $('#user-list').append(aUser);
-    
+
     try {
 
-        if(!firstElement) {
+        if (!firstElement) {
             var element = document.getElementById('btn-' + encodeid);
             if (element) {
                 element.addEventListener('click', (ev) => {
@@ -305,12 +309,12 @@ function appendUserOnUI(authStr) {
                     doRequestDelUser(divId);
                 });
             } else {
-                logger.log('error element  is '+ element);
+                logger.log('error element  is ' + element);
             }
         }
-        
+
         var cpId = 'btncopy-' + encodeid;
-        var element2 = $('#'+cpId);
+        var element2 = $('#' + cpId);
         if (element2) {
             element2.bind('click', (ev) => {
                 doCopyUser(ev.target.id);
@@ -318,25 +322,25 @@ function appendUserOnUI(authStr) {
         } else {
             logger.log('bind copy event failed for ' + cpId);
         }
-        
 
-    } catch(e) {
+
+    } catch (e) {
         logger.log("get element error:" + e);
     }
-    
+
 }
 
 function removeUserFromUI(id) {
     var divId = getIdFromButtonId(id);
     logger.log('remove element : ' + divId);
-    $('#tb-'+divId).remove();
+    $('#tb-' + divId).remove();
 }
 
 function onAddUserClick() {
-    if ( !checkInput()) {
+    if (!checkInput()) {
         return;
     }
-    if ( !isServerAvilable ) {
+    if (!isServerAvilable) {
         alert('连接服务器失败!');
         return
     }
@@ -345,7 +349,7 @@ function onAddUserClick() {
 
 
 function refreshUsers() {
-    if ( !checkInput()) {
+    if (!checkInput()) {
         return;
     }
     doRefreshUsers();
@@ -358,17 +362,27 @@ function doQuit() {
 
 // init event bindings
 
-$(()=> {
-    $('#add-user').bind('click', (ev)=>{
+function getAdminLinkStrFromFile() {
+    var adminStrs = urlParser.getAllProfilesForAdmin();
+    if (adminStrs.length > 0) {
+        return adminStrs[0];
+    }
+    return "";
+}
+
+$(() => {
+    $('#add-user').bind('click', (ev) => {
         onAddUserClick();
     });
     $('#refresh-users').bind('click', (ev) => {
         refreshUsers();
     });
-    
-    $('#btn-quit').bind('click', (ev) =>{
+
+    $('#btn-quit').bind('click', (ev) => {
         doQuit();
     });
+
+    $('#url-input').val(getAdminLinkStrFromFile());
 
     process.on('uncaughtException', (reason, p) => {
         logger.log('uncaught exception : ' + reason);
