@@ -6,7 +6,8 @@
   "scripts": {
     "dbg": "electron index.js  --disable-gpu",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "packmac": "electron-builder"
+    "packmac": "electron-builder",
+    "pack": "electron-packager ./ --platform=win32 --arch=ia32 --out=./dist/win32"
   },
   "build": {
     "appId": "pangolin.com",
@@ -58,6 +59,7 @@
   },
   "devDependencies": {
     "electron": "^3.0.11",
-    "electron-builder": "^20.38.4"
+    "electron-builder": "^20.38.4",
+    "electron-packager": "^13.0.1"
   }
 }
